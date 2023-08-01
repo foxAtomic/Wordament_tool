@@ -1,1 +1,234 @@
+#include<bits/stdc++.h>
+#include<windows.h>
+#define VK_LBUTTON        0x01//鼠标左键
+#define VK_RBUTTON        0x02//鼠标右键
+#define VK_CANCEL         0x03//Ctrl + Break
+#define VK_MBUTTON        0x04//鼠标中键/* NOT contiguous with L & RBUTTON */
+#define VK_BACK           0x08//Backspace 键
+#define VK_TAB            0x09//Tab 键
+#define VK_CLEAR          0x0C
+#define VK_RETURN         0x0D//回车键
+#define VK_SHIFT          0x10
+#define VK_CONTROL        0x11
+#define VK_MENU           0x12//Alt 键
+#define VK_PAUSE          0x13
+#define VK_CAPITAL        0x14//Caps Lock 键
+#define VK_KANA           0x15
+#define VK_HANGEUL        0x15/* old name - should be here for compatibility */
+#define VK_HANGUL         0x15
+#define VK_JUNJA          0x17
+#define VK_FINAL          0x18
+#define VK_HANJA          0x19
+#define VK_KANJI          0x19
+#define VK_ESCAPE         0x1B//Esc 键
+#define VK_CONVERT        0x1C
+#define VK_NONCONVERT     0x1D
+#define VK_ACCEPT         0x1E
+#define VK_MODECHANGE     0x1F
+#define VK_SPACE          0x20//空格
+#define VK_PRIOR          0x21//Page Up 键
+#define VK_NEXT           0x22//Page Down 键
+#define VK_END            0x23//End 键
+#define VK_HOME           0x24//Home 键
+#define VK_LEFT           0x25/*方向键*/
+#define VK_UP             0x26
+#define VK_RIGHT          0x27
+#define VK_DOWN           0x28
+#define VK_SELECT         0x29
+#define VK_PRINT          0x2A
+#define VK_EXECUTE        0x2B
+#define VK_SNAPSHOT       0x2C//Print Screen 键
+#define VK_INSERT         0x2D//Insert键
+#define VK_DELETE         0x2E//Delete键
+#define VK_HELP           0x2F
+#define A_Key             0x41 	
+#define B_Key             0x42 	
+#define C_Key             0x43 	
+#define D_Key             0x44 	
+#define E_Key             0x45 	
+#define F_Key             0x46 	
+#define G_Key             0x47 	
+#define H_Key             0x48 	
+#define I_Key             0x49 	
+#define J_Key             0x4A 	
+#define K_Key             0x4B 	
+#define L_Key             0x4C 	
+#define M_Key             0x4D 
+#define N_Key             0x4E 	
+#define O_Key             0x4F 	
+#define P_Key             0x50 	
+#define Q_Key             0x51 	
+#define R_Key             0x52 	
+#define S_Key             0x53 	
+#define T_Key             0x54 	
+#define U_Key             0x55 	
+#define V_Key             0x56 	
+#define W_Key             0x57 	
+#define X_Key             0x58 	
+#define Y_Key             0x59 	
+#define Z_Key             0x5A 	
+//各种键对应的编码（后面没啥用） 
+const unsigned int KeyTypes[27] = {0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A, 0x0D};
+//每个字母及回车键 
+using namespace std;
+const int N = 2e6+100, M = 2e5+100;//数据规模 
+const int m = 4;
+int n = 0;
+string s[M];//存储词典 
+bool vis[M];//标记找到的单词 
+string mp[5][5];//存储字母盘 
+struct Trie{
+	int son[26], cnt;
+}tr[N];//字典树 
+int idx;
 
+void insert(string ts, int id){
+	int lth = ts.length();
+	int u = 0;
+	for(int i = 0; i<lth; ++i){
+		int v = ts[i]-'a';
+		if(!tr[u].son[v]){
+			tr[u].son[v] = ++idx;
+		}
+		u = tr[u].son[v];
+	}
+	tr[u].cnt = id;
+}//字典树插入 
+
+void init(){
+	fstream fin;
+	n = 1;
+	fin.open("dict.txt", fstream::in);
+	while(fin >> s[n]){
+		insert(s[n], n);
+		++n;
+	}
+	--n;
+	fin.close();
+	fin.clear();
+	//输入词库，初始化字典树 
+}
+int u;
+bool add(string tx){//在 Trie 树上匹配，如果失配则返回 1。 
+	int lth = tx.length();
+	int v;
+	if(tx[lth-1] == '-'){
+		if(u){
+			return 1;
+		} 
+		else{
+			--lth;
+		}
+	} 
+	int st = 0;
+	if(tx[0] == '-'){
+		st = 1;
+	}
+	for(int i = st; i<lth; ++i){
+		v = tx[i]-'a';
+		if(!tr[u].son[v]){
+			return 1;
+		}
+		u = tr[u].son[v];
+	}
+	if(tr[u].cnt){
+		vis[tr[u].cnt] = 1;
+	}
+	if(tx[0] == '-'){
+		return 1;
+	}
+	return 0;
+}
+int dx[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
+int dy[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+bool vs[5][5];
+void dfs(int nx, int ny){
+	if(add(mp[nx][ny])){//尝试匹配， 失配则返回。 
+		return;
+	}
+	int tmpu = u;
+	for(int o = 0; o<8; ++o){
+		int tx = nx+dx[o], ty = ny+dy[o]; 
+		if(tx<1 || tx>4 || ty<1 || ty>4 || vs[tx][ty]) continue;//边界条件 
+		vs[nx][ny] = 1;
+		u = tmpu;
+		dfs(tx, ty);
+		vs[nx][ny] = 0;
+	}
+	return;
+}
+
+
+#define Press 1
+#define Release 0
+
+BOOL KeyBoardEvent(unsigned int VirtualKey, bool Status){
+	INPUT inputs[1] = {};
+	ZeroMemory(inputs, sizeof(inputs));
+	inputs[0].type = INPUT_KEYBOARD;
+	inputs[0].ki.wVk = VirtualKey;
+	if(Status == Press){
+		
+	} else if(Status == Release){
+		inputs[0].ki.dwFlags = KEYEVENTF_KEYUP;
+	}
+	UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+	if(uSent != ARRAYSIZE(inputs)){
+		cout << "SendInput failed: 0x%x\n" <<HRESULT_FROM_WIN32(GetLastError());
+		return 0;
+	} else{
+		return 1;
+	}
+}
+//虚拟键盘 
+void PressKey(int KeyType){
+    KeyBoardEvent(KeyTypes[KeyType], Press);
+    Sleep(25);//调整按下和抬起的时间间隔 
+    KeyBoardEvent(KeyTypes[KeyType], Release);
+}//按下某个键并抬起，模拟敲击键盘 
+void Print(string ts){//用于模拟打字 
+	int lth = ts.length();
+	for(int i = 0; i<lth; ++i){
+        PressKey(ts[i]-'a');
+    }
+    PressKey(26);//模拟回车 
+    Sleep(10);
+}
+void work(){
+	for(int i = 1; i<=4; ++i){
+		for(int j = 1; j<=4; ++j){
+			cin >> mp[i][j];
+		}
+	}
+	for(int i = 1; i<=4; ++i){
+		for(int j = 1; j<=4; ++j){
+			u = 0;
+			dfs(i, j);
+		}
+	}
+}
+
+void end(){
+	cout << "请切换窗口" << endl;
+	Sleep(4000);
+	cout << "开始运行，请勿切换窗口" << endl; 
+	for(int i = 1; i<=n; ++i){
+		if(vis[i]){
+			Print(s[i]);
+		}
+	} 
+}
+//double ta, tb;
+int gamemode;
+int main(){
+	init();
+	scanf("%d", &gamemode);
+	if(gamemode == 1){//有无双字母格 
+		work();
+	}else{
+		work();
+		work();
+	}
+	end();
+	return 0;
+} 
